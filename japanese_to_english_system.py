@@ -23,12 +23,10 @@ try:
     GOOGLE_TRANSLATOR_AVAILABLE = True
 except ImportError:
     GOOGLE_TRANSLATOR_AVAILABLE = False
-    try:
-        from ai_translator import AITranslator, LocalAITranslator
-        AI_TRANSLATOR_AVAILABLE = True
-    except ImportError:
-        AI_TRANSLATOR_AVAILABLE = False
-        print("[WARNING] No translation modules available")
+    print("[WARNING] No translation modules available")
+
+# ai_translator は使用しない（Google翻訳のみ）
+AI_TRANSLATOR_AVAILABLE = False
 
 class JapaneseToEnglishSystem:
     def __init__(self):
@@ -50,32 +48,24 @@ class JapaneseToEnglishSystem:
             self.embeddings = None
             self.use_embeddings = False
 
-        # 翻訳モデルの初期化 (Google翻訳を優先)
+        # 翻訳モデルの初期化 (Google翻訳のみ使用 - シンプル化)
         if GOOGLE_TRANSLATOR_AVAILABLE:
             try:
-                self.translator = SmartHybridTranslator()
-                self.use_ai_translation = True
-                print("[SUCCESS] Google Translate initialized for high-quality translation")
+                from google_translator import GoogleTranslator
+                self.translator = GoogleTranslator()
+                self.use_ai_translation = self.translator.available
+                if self.use_ai_translation:
+                    print("[SUCCESS] Google Translate initialized for high-quality translation")
+                else:
+                    print("[WARNING] Google Translate not available")
             except Exception as e:
                 self.translator = None
                 self.use_ai_translation = False
                 print(f"[WARNING] Failed to initialize Google Translate: {e}")
-        elif AI_TRANSLATOR_AVAILABLE:
-            try:
-                self.ai_translator = LocalAITranslator()
-                self.translator = self.ai_translator
-                self.use_ai_translation = self.ai_translator.available
-                if self.use_ai_translation:
-                    print("[MARIAN-MT] AI translation mode: high-quality translation available")
-                else:
-                    print("[MOCK MODE] Using pattern matching translation")
-            except Exception as e:
-                self.translator = None
-                self.use_ai_translation = False
-                print(f"[WARNING] Failed to initialize AI translation model: {e}")
         else:
             self.translator = None
             self.use_ai_translation = False
+            print("[WARNING] Google Translate not available")
 
         print("Japanese to English Translation System initialized")
 
