@@ -36,6 +36,7 @@ class GoogleTranslator:
     def translate(self, japanese_text: str, retries: int = 3) -> str:
         """高品質なGoogle翻訳を実行"""
         if not self.available or not self.translator:
+            print(f"[FALLBACK] Google Translate not available: available={self.available}, translator={self.translator}")
             return self._fallback_translation(japanese_text)
 
         # 複数回リトライして安定性を向上
@@ -49,9 +50,11 @@ class GoogleTranslator:
                 )
 
                 if result and result.text:
+                    print(f"[SUCCESS] Google Translate: '{japanese_text}' -> '{result.text}'")
                     return result.text
 
             except Exception as e:
+                print(f"[ERROR] Google Translate attempt {attempt + 1}/{retries}: {e}")
                 if attempt < retries - 1:
                     # リトライ前に短い待機
                     time.sleep(1)
@@ -60,6 +63,7 @@ class GoogleTranslator:
                     print(f"[WARNING] Google Translate error after {retries} attempts: {e}")
                     return self._fallback_translation(japanese_text)
 
+        print("[FALLBACK] Google Translate failed, using fallback")
         return self._fallback_translation(japanese_text)
 
     def _fallback_translation(self, text: str) -> str:
@@ -165,16 +169,22 @@ class SmartHybridTranslator:
         if not japanese_text or not japanese_text.strip():
             return ""
 
+        print(f"[HYBRID] Translating: '{japanese_text}'")
+        print(f"[HYBRID] Google available: {self.use_google}")
+
         # Google翻訳を優先的に使用
         if self.use_google:
             translation = self.google_translator.translate(japanese_text)
+            print(f"[HYBRID] Result from Google: '{translation}'")
 
             # 翻訳が短すぎる場合は再試行
             if len(translation.split()) < len(japanese_text) / 10:
                 print("[INFO] Translation seems incomplete, retrying...")
                 translation = self.google_translator.translate(japanese_text, retries=5)
+                print(f"[HYBRID] Retry result: '{translation}'")
 
             return translation
 
         # フォールバック
+        print("[HYBRID] Using fallback translation")
         return self.google_translator._fallback_translation(japanese_text)
